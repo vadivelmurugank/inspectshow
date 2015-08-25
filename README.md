@@ -9,8 +9,7 @@ sequences as part of module.
 object types to list in tree format. The module also lists all the python
 modules in the python path.
 
-The primary users for "inspectshow" is for python programmers and beginners to
-understand the internal object types for all or given module.
+The primary users for "inspectshow" is for python programmers and for reverse engineering python module internals.
 
 ## inspectshow module usage
 
@@ -90,7 +89,7 @@ understand the internal object types for all or given module.
 ```
 
 
-## Exampes
+## Examples
 
 ###  inspectshow of 'os' module
 
