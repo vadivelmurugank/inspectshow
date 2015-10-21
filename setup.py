@@ -5,7 +5,7 @@ setup(
   name = 'inspectshow',
   packages_dir = {'inspectshow': ' '},
   packages = ['inspectshow'],
-  version = '0.2',
+  version = '0.3',
   description = 'show module internals with inspect in tree format',
   author = 'Vadivel',
   author_email = 'vadivelmurugank@gmail.com',

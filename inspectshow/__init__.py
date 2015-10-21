@@ -19,8 +19,9 @@ import argparse
 import imp
 import importlib
 import os, sys, errno
+import pdb
 
-class tree:
+class showtree:
     def __init__(self):
         self.Indent = 0
         self.Modules = []
@@ -34,13 +35,21 @@ class tree:
     def __call__(self, *args, **kwargs):
         if not args:
             self.show_allmodules()
+            return
         for arg in args:
             self.show(arg)
     
     # INDENTATION FUNCTIONS
     def dprint(self, *args):
-       """ Function to print lines indented according to level """
-       print(' '*self.Indent,"|--", *args)
+        """ Function to print lines indented according to level """
+        if (type(list(args)[0]) == str):
+            if '[@' in list(args)[0]:
+                print("\n\n",' '*(self.Indent), *args)
+                return
+            if '@@doc' in list(args)[0]:
+                print(' '*(self.Indent+4), *args)
+                return
+        print(' '*self.Indent, "|-- ", *args)
 
     def indent(self):
        """ Increase indentation """
@@ -56,13 +65,13 @@ class tree:
             doc=doc.split('\n')
             if '' in doc: doc.remove('')
             self.indent()
-            print(' '*self.Indent,"::::", "\"",ObjMod.__name__, ":", doc[0],"\"")
+            print(' '*self.Indent,"    @@doc :", "\"",ObjMod.__name__, ":", doc[0],"\"")
             self.dedent()
 
     def show_allmodules(self):
         s=sys.path
         print("Seaching Modules in the path :", s, "\n")
-        self.dprint("[ MODULES ]")
+        self.dprint("[@ MODULES ]")
         self.indent()
         #for im, mod, pkg in pkgutil.walk_packages(path=s, onerror=lambda x: None):
         for im, mod, pkg in pkgutil.iter_modules():
@@ -86,7 +95,7 @@ class tree:
         f, path, desc = imp.find_module(modulestr)
         if not (desc[2] == imp.C_BUILTIN):
             pkgpath=os.path.dirname(path)
-            self.dprint("[ SUBMODULES ]")
+            self.dprint("[@ SUBMODULES ]")
             self.indent()
             for importer, modname, pkg in pkgutil.walk_packages(path=[pkgpath], prefix=modulestr+'.',onerror=lambda x: None):
                 self.dprint(modname)
@@ -122,7 +131,7 @@ class tree:
 
     def print_variable_type(self, objType):
         default_vars=["__builtins__", "__doc__","__path__", "__cached__", "__file__", "__name__", "__package__", "__version__"]
-        self.dprint("[ %s ]" %objType.__name__)
+        self.dprint("[@ %s ]" %objType.__name__)
         self.indent();self.indent()
         for ModObj in self.Modules:
             for name in dir(ModObj):
@@ -192,7 +201,7 @@ class tree:
                 if mod not in self.Modules:
                     self.Modules.append(mod)
                     self.dprint(modname)
-                    show_doc(mod)
+                    self.show_doc(mod)
             except Exception as e:
                 self.dprint(" + XXX Error", e.__doc__, ":", modname)
                 pass
@@ -234,12 +243,12 @@ class tree:
         if (modname != module_name):
             self.dprint("Valid Module is:", modname)
 
-        self.dprint ("[SUBPACKAGES]")
+        self.dprint ("[@SUBPACKAGES]")
         for ModObj in self.Modules:
             if inspect.ismodule(ModObj):
                 self.show_subpackages(ModObj)
 
-        self.dprint ("[SUBMODULES ]")
+        self.dprint ("[@SUBMODULES ]")
         for ModObj in self.Modules:
             self.indent()
             self.dprint ("%s" %ModObj.__name__)
@@ -247,125 +256,126 @@ class tree:
             self.show_module(ModObj)
             self.dedent()
 
-        self.dprint ("[CLASS   <mro>]")
-        self.dprint ("  :::: - Classes and Method Resolution Order")
+        self.dprint ("[@CLASS   <mro>]")
+        self.dprint (" @@doc : - Classes and Method Resolution Order")
         for ModObj in self.Modules:
             self.indent()
             self.show_classes(ModObj)
             self.dedent()
 
-        self.dprint ("[ FUNCTION  ]")
-        self.dprint ("  ::::  - Function including \"lambda\" anonymous functions")
+        self.dprint ("[@ FUNCTION  ]")
+        self.dprint (" @@doc :  - Function including \"lambda\" anonymous functions")
         for ModObj in self.Modules:
             for name, data in inspect.getmembers(ModObj, inspect.isfunction):
                 self.indent()
                 self.show_function(ModObj, name)
                 self.dedent()
 
-        self.dprint ("[ROUTINE  ] - user-defined or built-in function or method")
+        self.dprint ("[@ ROUTINE  ]")
+        self.dprint (" @@doc :  user-defined or built-in function or method")
         for ModObj in self.Modules:
             for name, data in inspect.getmembers(ModObj, inspect.isroutine):
                 self.indent()
                 self.show_function(ModObj, name)
                 self.dedent()
 
-        self.dprint ("[ METHOD ]")
-        self.dprint ("  :::::   - bound method")
+        self.dprint ("[@ METHOD ]")
+        self.dprint (" @@doc ::   - bound method")
         for ModObj in self.Modules:
             for name, data in inspect.getmembers(ModObj, inspect.ismethod):
                 self.indent()
                 self.show_function(ModObj, name)
                 self.dedent()
 
-        self.dprint ("[ GENERATOR ]")
-        self.dprint ("  ::::   - object is a generator with \"yield\" expressions")
+        self.dprint ("[@ GENERATOR ]")
+        self.dprint (" @@doc :   - object is a generator with \"yield\" expressions")
         for ModObj in self.Modules:
             for name, data in inspect.getmembers(ModObj, inspect.isgenerator):
                 self.indent()
                 self.show_function(ModObj, name)
                 self.dedent()
 
-        self.dprint ("[ GENERATOR FUNCTION ]")
-        self.dprint ("  ::::     - object is a generator function")
+        self.dprint ("[@ GENERATOR FUNCTION ]")
+        self.dprint (" @@doc :     - object is a generator function")
         for ModObj in self.Modules:
             for name, data in inspect.getmembers(ModObj, inspect.isgeneratorfunction):
                 self.indent()
                 self.show_function(ModObj, name)
                 self.dedent()
 
-        self.dprint ("[ TRACEBACK ]")
-        self.dprint ("  ::::  - Traceback object")
+        self.dprint ("[@ TRACEBACK ]")
+        self.dprint (" @@doc :  - Traceback object")
         self.indent()
         for ModObj in self.Modules:
             for name, data in inspect.getmembers(ModObj, inspect.istraceback):
                 self.dprint ("%s" %name )
         self.dedent()
 
-        self.dprint ("[ FRAME ]")
-        self.dprint ("  :::: - Frame Object")
+        self.dprint ("[@ FRAME ]")
+        self.dprint (" @@doc : - Frame Object")
         self.indent()
         for ModObj in self.Modules:
             for name, data in inspect.getmembers(ModObj, inspect.isframe):
                 self.dprint ("%s" %name )
         self.dedent()
 
-        self.dprint ("[ CODE ]")
-        self.dprint ("  :::: - Code Object")
+        self.dprint ("[@ CODE ]")
+        self.dprint (" @@doc : - Code Object")
         self.indent()
         for ModObj in self.Modules:
             for name, data in inspect.getmembers(ModObj, inspect.iscode):
                 self.dprint ("%s" %name )
         self.dedent()
 
-        self.dprint ("[ BUILTIN ]")
-        self.dprint ("  :::: - built-in function or bound built-in method")
+        self.dprint ("[@ BUILTIN ]")
+        self.dprint (" @@doc : - built-in function or bound built-in method")
         self.indent()
         for ModObj in self.Modules:
             for name, data in inspect.getmembers(ModObj, inspect.isbuiltin):
                 self.show_function(ModObj, name)
         self.dedent()
 
-        self.dprint ("[ ABSTRACT ]")
-        self.dprint ("  :::: - object is abstract base class")
+        self.dprint ("[@ ABSTRACT ]")
+        self.dprint (" @@doc : - object is abstract base class")
         self.indent()
         for ModObj in self.Modules:
             for name, data in inspect.getmembers(ModObj, inspect.isabstract):
                 self.dprint ("%s" %name )
         self.dedent()
 
-        self.dprint ("[ METHOD DESCRIPTOR ]")
-        self.dprint ("  ::::  - Object has __get__ attribute but NOT __set__ attribute")
+        self.dprint ("[@ METHOD DESCRIPTOR ]")
+        self.dprint (" @@doc :  - Object has __get__ attribute but NOT __set__ attribute")
         self.indent()
         for ModObj in self.Modules:
             for name, data in inspect.getmembers(ModObj, inspect.ismethoddescriptor):
                 self.dprint ("%s" %name )
         self.dedent()
 
-        self.dprint ("[ DATA DESCRIPTOR ]")
-        self.dprint ("  ::::  - Object has __get__, __set__, __delete__ attributes")
+        self.dprint ("[@ DATA DESCRIPTOR ]")
+        self.dprint (" @@doc :  - Object has __get__, __set__, __delete__ attributes")
         self.indent()
         for ModObj in self.Modules:
             for name, data in inspect.getmembers(ModObj, inspect.isdatadescriptor):
                 self.dprint ("%s" %name )
         self.dedent()
 
-        self.dprint ("[ GETSET DESCRIPTOR ]")
+        self.dprint ("[@ GETSET DESCRIPTOR ]")
         self.indent()
         for ModObj in self.Modules:
             for name, data in inspect.getmembers(ModObj, inspect.isgetsetdescriptor):
                 self.dprint ("%s" %name )
         self.dedent()
 
-        self.dprint ("[ MEMBER DESCRIPTOR ]")
+        self.dprint ("[@ MEMBER DESCRIPTOR ]")
         self.indent()
         for ModObj in self.Modules:
             for name, data in inspect.getmembers(ModObj, inspect.ismemberdescriptor):
                 self.dprint ("%s" %name )
         self.dedent()
 
-        self.dprint ("[ VARIABLES ]")
+        self.dprint ("[@ VARIABLES ]")
         self.indent()
-        self.dprint ("[ GLOBALS ]")
+        self.dprint ("[@ GLOBALS ]")
         self.indent()
         self.print_variable_type(bool)
         self.print_variable_type(int)
@@ -373,7 +383,7 @@ class tree:
         self.print_variable_type(complex)
         self.dedent()
 
-        self.dprint ("[ IMMUTABLE SEQUENCES ]")
+        self.dprint ("[@ IMMUTABLE SEQUENCES ]")
         self.indent()
         self.print_variable_type(str)
         self.print_variable_type(slice)
@@ -381,13 +391,13 @@ class tree:
         self.print_variable_type(tuple)
         self.print_variable_type(frozenset)
         self.dedent()
-        self.dprint ("[ MUTABLE SEQUENCES ]")
+        self.dprint ("[@ MUTABLE SEQUENCES ]")
         self.indent()
         self.print_variable_type(list)
         self.print_variable_type(bytearray)
         self.print_variable_type(set)
         self.dedent()
-        self.dprint ("[ MAPPING ]")
+        self.dprint ("[@ MAPPING ]")
         self.indent()
         self.print_variable_type(dict)
         #self.print_variable_type(long)
@@ -399,7 +409,7 @@ class tree:
         #self.dedent()
 
     if 0:
-        self.dprint("[ FRAMEINFO ]")
+        self.dprint("[@ FRAMEINFO ]")
         self.indent()
         frame = inspect.currentframe()
         tb=inspect.getframeinfo(frame)

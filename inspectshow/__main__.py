@@ -6,7 +6,7 @@ if __name__ == "__main__":
     import sys
     import inspectshow
 
-    display = inspectshow.tree()
+    display = inspectshow.showtree()
 
     if len(sys.argv) < 2:
         display()
