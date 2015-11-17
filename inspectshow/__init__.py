@@ -108,14 +108,36 @@ class showtree:
 
     def show_classes(self, module):
         for name, data in inspect.getmembers(module, inspect.isclass):
-            self.dprint ("%s" %name)
+            self.dprint ("[Class %s]" %name)
+            self.indent()
             cls=getattr(module, name)
             cltree=(inspect.getmro(cls))
+            self.indent()
+            self.dprint("MRO - Class Member Resolution Order:")
             self.indent()
             self.indent()
             for indx in range(len(cltree)): self.dprint(cltree[indx])
             self.dedent()
             self.dedent()
+
+            attrs = [attr for attr in dir(cls) if not attr.startswith("__")]
+            objlist = set([ type(getattr(cls,attr)) for attr in attrs])
+            for aobj in objlist: 
+                self.dprint("[  %s  ]:" %(aobj.__name__))
+                objmembers = [sstr for sstr in attrs if (isinstance(getattr(cls, sstr), aobj))]
+                self.indent()
+                self.indent()
+                for memb in objmembers:
+                    if inspect.isfunction(getattr(cls, memb)) is True:
+                        self.dprint("%s (%s)" %(memb, inspect.getargspec(getattr(cls, memb))[0]))
+                    else:
+                        self.dprint(memb)
+                self.dedent()
+                self.dedent()
+            self.dedent()
+            self.dedent()
+
+    #def show_classmembers(self, module):
 
     def show_function(self, module, name):
         fn=getattr(module, name)
@@ -256,7 +278,7 @@ class showtree:
             self.show_module(ModObj)
             self.dedent()
 
-        self.dprint ("[@CLASS   <mro>]")
+        self.dprint ("[@CLASS        ]")
         self.dprint (" @@doc : - Classes and Method Resolution Order")
         for ModObj in self.Modules:
             self.indent()
