@@ -19,6 +19,7 @@ import argparse
 import imp
 import importlib
 import os, sys, errno
+import re
 import pdb
 
 class showtree:
@@ -150,6 +151,22 @@ class showtree:
             #self.dprint("(keywords)- %s" %list[2])
             #self.dprint("(defaults)- %s" %list[3])
         except: pass
+
+    def show_builtin_function(self, module, name):
+        fn=getattr(module, name)
+        if bool(fn.__doc__):
+            patn = r'([\w\d]*[^\(])\( ?([^\)]*)'
+            btlist=list(filter(lambda ob : bool(ob) and (ob[0] == name), 
+re.findall(patn,fn.__doc__)))
+        docstr = str()
+        for bt in btlist:
+            docstr += str(bt[0] + " (" + bt[1] + ")  ")
+        
+        if bool(docstr):
+            self.dprint("%s " %(docstr))
+        else:
+            self.dprint("%s() " %(name))
+
 
     def print_variable_type(self, objType):
         default_vars=["__builtins__", "__doc__","__path__", "__cached__", "__file__", "__name__", "__package__", "__version__"]
@@ -354,7 +371,7 @@ class showtree:
         self.indent()
         for ModObj in self.Modules:
             for name, data in inspect.getmembers(ModObj, inspect.isbuiltin):
-                self.show_function(ModObj, name)
+                self.show_builtin_function(ModObj, name)
         self.dedent()
 
         self.dprint ("[@ ABSTRACT ]")
