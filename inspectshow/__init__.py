@@ -154,11 +154,13 @@ class showtree:
 
     def show_builtin_function(self, module, name):
         fn=getattr(module, name)
+        btlist = list()
+        docstr = str()
+
         if bool(fn.__doc__):
             patn = r'([\w\d]*[^\(])\( ?([^\)]*)'
             btlist=list(filter(lambda ob : bool(ob) and (ob[0] == name), 
 re.findall(patn,fn.__doc__)))
-        docstr = str()
         for bt in btlist:
             docstr += str(bt[0] + " (" + bt[1] + ")  ")
         
@@ -215,8 +217,8 @@ re.findall(patn,fn.__doc__)))
 
 
     def show_subpackages(self, module):
-        #if module.__name__ in sys.builtin_module_names:
-        #    return
+        if module.__name__ in sys.builtin_module_names:
+            return
         RootModule = [module.__name__]
         # Package dir name will be the root module name
         rootdir = os.path.basename(os.path.dirname(module.__file__))
