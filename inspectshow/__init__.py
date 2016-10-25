@@ -91,8 +91,8 @@ class showtree:
         self.dedent()
 
     def show_submodules(self, modulestr):
-        if modulestr in sys.builtin_module_names:
-            return
+        #if modulestr in sys.builtin_module_names:
+        #    return
         f, path, desc = imp.find_module(modulestr)
         if not (desc[2] == imp.C_BUILTIN):
             pkgpath=os.path.dirname(path)
@@ -198,8 +198,8 @@ re.findall(patn,fn.__doc__)))
         self.dedent();self.dedent()
 
     def show_module(self, module):
-        if module.__name__ in sys.builtin_module_names:
-            return
+        #if module.__name__ in sys.builtin_module_names:
+        #    return
         try:
             for name, data in inspect.getmembers(module, inspect.ismodule):
                 self.indent()
@@ -215,8 +215,8 @@ re.findall(patn,fn.__doc__)))
 
 
     def show_subpackages(self, module):
-        if module.__name__ in sys.builtin_module_names:
-            return
+        #if module.__name__ in sys.builtin_module_names:
+        #    return
         RootModule = [module.__name__]
         # Package dir name will be the root module name
         rootdir = os.path.basename(os.path.dirname(module.__file__))
@@ -310,13 +310,13 @@ re.findall(patn,fn.__doc__)))
                 self.show_function(ModObj, name)
                 self.dedent()
 
-        self.dprint ("[@ ROUTINE  ]")
-        self.dprint (" @@doc :  user-defined or built-in function or method")
-        for ModObj in self.Modules:
-            for name, data in inspect.getmembers(ModObj, inspect.isroutine):
-                self.indent()
-                self.show_function(ModObj, name)
-                self.dedent()
+        #self.dprint ("[@ ROUTINE  ]")
+        #self.dprint (" @@doc :  user-defined or built-in function or method")
+        #for ModObj in self.Modules:
+        #    for name, data in inspect.getmembers(ModObj, inspect.isroutine):
+        #        self.indent()
+        #        self.show_function(ModObj, name)
+        #        self.dedent()
 
         self.dprint ("[@ METHOD ]")
         self.dprint (" @@doc ::   - bound method")
