@@ -2,6 +2,7 @@
 Module wrapper to show submodules, classes, methods and functions in a tree like
 display. This modules uses inspect module to display the internals of a module.
 """
+from __future__ import print_function
 
 # Release info
 __author__ = 'Vadivel'
@@ -19,7 +20,6 @@ import argparse
 import imp
 import importlib
 import os, sys, errno
-import re
 import pdb
 
 class showtree:
@@ -45,12 +45,15 @@ class showtree:
         """ Function to print lines indented according to level """
         if (type(list(args)[0]) == str):
             if '[@' in list(args)[0]:
-                print("\n\n",' '*(self.Indent), *args)
+                print("\n\n",' '*(self.Indent), ' '.join(str(astr) for astr in args))
+                #print("\n\n",' '*(self.Indent),args)
                 return
             if '@@doc' in list(args)[0]:
-                print(' '*(self.Indent+4), *args)
+                print(' '*(self.Indent+4), ' '.join(str(astr) for astr in args))
+                #print(' '*(self.Indent+4), args)
                 return
-        print(' '*self.Indent, "|-- ", *args)
+        print(' '*self.Indent, "|-- ", ' '.join(str(astr) for astr in args))
+        #print(' '*self.Indent, "|-- ", args)
 
     def indent(self):
        """ Increase indentation """
@@ -91,8 +94,8 @@ class showtree:
         self.dedent()
 
     def show_submodules(self, modulestr):
-        #if modulestr in sys.builtin_module_names:
-        #    return
+        if modulestr in sys.builtin_module_names:
+            return
         f, path, desc = imp.find_module(modulestr)
         if not (desc[2] == imp.C_BUILTIN):
             pkgpath=os.path.dirname(path)
@@ -152,24 +155,6 @@ class showtree:
             #self.dprint("(defaults)- %s" %list[3])
         except: pass
 
-    def show_builtin_function(self, module, name):
-        fn=getattr(module, name)
-        btlist = list()
-        docstr = str()
-
-        if bool(fn.__doc__):
-            patn = r'([\w\d]*[^\(])\( ?([^\)]*)'
-            btlist=list(filter(lambda ob : bool(ob) and (ob[0] == name), 
-re.findall(patn,fn.__doc__)))
-        for bt in btlist:
-            docstr += str(bt[0] + " (" + bt[1] + ")  ")
-        
-        if bool(docstr):
-            self.dprint("%s " %(docstr))
-        else:
-            self.dprint("%s() " %(name))
-
-
     def print_variable_type(self, objType):
         default_vars=["__builtins__", "__doc__","__path__", "__cached__", "__file__", "__name__", "__package__", "__version__"]
         self.dprint("[@ %s ]" %objType.__name__)
@@ -200,8 +185,8 @@ re.findall(patn,fn.__doc__)))
         self.dedent();self.dedent()
 
     def show_module(self, module):
-        #if module.__name__ in sys.builtin_module_names:
-        #    return
+        if module.__name__ in sys.builtin_module_names:
+            return
         try:
             for name, data in inspect.getmembers(module, inspect.ismodule):
                 self.indent()
@@ -312,13 +297,13 @@ re.findall(patn,fn.__doc__)))
                 self.show_function(ModObj, name)
                 self.dedent()
 
-        #self.dprint ("[@ ROUTINE  ]")
-        #self.dprint (" @@doc :  user-defined or built-in function or method")
-        #for ModObj in self.Modules:
-        #    for name, data in inspect.getmembers(ModObj, inspect.isroutine):
-        #        self.indent()
-        #        self.show_function(ModObj, name)
-        #        self.dedent()
+        self.dprint ("[@ ROUTINE  ]")
+        self.dprint (" @@doc :  user-defined or built-in function or method")
+        for ModObj in self.Modules:
+            for name, data in inspect.getmembers(ModObj, inspect.isroutine):
+                self.indent()
+                self.show_function(ModObj, name)
+                self.dedent()
 
         self.dprint ("[@ METHOD ]")
         self.dprint (" @@doc ::   - bound method")
@@ -373,7 +358,7 @@ re.findall(patn,fn.__doc__)))
         self.indent()
         for ModObj in self.Modules:
             for name, data in inspect.getmembers(ModObj, inspect.isbuiltin):
-                self.show_builtin_function(ModObj, name)
+                self.show_function(ModObj, name)
         self.dedent()
 
         self.dprint ("[@ ABSTRACT ]")
