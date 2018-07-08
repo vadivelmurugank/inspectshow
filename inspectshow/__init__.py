@@ -21,6 +21,9 @@ import imp
 import importlib
 import os, sys, errno
 import pdb
+import modulefinder
+import runpy
+import types
 
 class showtree:
     def __init__(self):
@@ -38,7 +41,11 @@ class showtree:
             self.show_allmodules()
             return
         for arg in args:
-            self.show(arg)
+            # Check if it is a script file
+            if (os.path.isfile(arg)):
+                self.showFile(arg)
+            else:
+                self.show(arg)
     
     # INDENTATION FUNCTIONS
     def dprint(self, *args):
@@ -133,7 +140,9 @@ class showtree:
                 self.indent()
                 for memb in objmembers:
                     if inspect.isfunction(getattr(cls, memb)) is True:
-                        self.dprint("%s (%s)" %(memb, inspect.getargspec(getattr(cls, memb))[0]))
+                        try: 
+                            self.dprint("%s (%s)" %(memb, inspect.getargspec(getattr(cls, memb))[0]))
+                        except: pass
                     else:
                         self.dprint(memb)
                 self.dedent()
@@ -233,6 +242,161 @@ class showtree:
                 pass
             self.dedent()
 
+    def showFile(self, file):
+        """
+        show the module, function, objects of a given python file
+        """
+        func=dict()
+        mod=dict()
+        builtin=dict()
+        gen=dict()
+        descrip=dict()
+        cls=dict()
+        strings=dict()
+        ints=dict()
+        dictn=list()
+        if (sys.version_info < (3, 0)):
+            fglobals = runpy.run_path(file)
+        else:
+            fglobals = runpy.run_path(file)
+            #for kd, vd in fglobals.items():
+            #    print(kd, ":::", type(vd), vd)
+            
+        for key, name in fglobals.items():
+            #print(key, ":", type(name))
+            #print(key, ":", name)
+            func.update({key: name})      if inspect.isfunction(name) else None
+            mod.update({key: name})       if inspect.ismodule(name) else None
+            builtin.update({key: name})   if inspect.isbuiltin(name) else None
+            gen.update({key: name})       if inspect.isgenerator(name) else None
+            descrip.update({key: name})   if isinstance(name, types.GetSetDescriptorType) else None
+            cls.update({key: name})       if inspect.isclass(name) else None
+            strings.update({key: name})   if type(name) is str else None
+            ints.update({key: name})      if type(name) is int else None
+            dictn.append(name)     if (type(name) is dict) and (key != "__builtins__") else None
+
+        def showfile_print(m):
+            self.dprint(m[0])
+            doc = m[1].__doc__
+            if doc is not None:
+                doc=doc.split('\n') 
+                self.dprint("    :: ",doc[0])
+
+        def showfile_print_function(m):
+            fn = m[1]
+            doc = m[1].__doc__
+            try:
+                list=inspect.getargspec(fn)
+                self.dprint("%s (%s)" %(m[0], list[0]))
+            except: pass
+
+            if doc is not None:
+                doc=doc.split('\n') 
+                self.dprint("    :: ",doc[0])
+
+        def showfile_print_class(m):
+            self.dprint(m[0])
+            cls = m[1]
+
+            cltree=inspect.getmro(cls)
+            self.indent()
+            self.dprint("MRO - Class Member Resolution Order:")
+            self.indent()
+            self.indent()
+            for indx in range(len(cltree)): self.dprint(cltree[indx])
+            self.dedent()
+            self.dedent()
+
+            attrs = [attr for attr in dir(cls) if not attr.startswith("__")]
+            objlist = set([ type(getattr(cls,attr)) for attr in attrs])
+            for aobj in objlist: 
+                self.dprint("[  %s  ]:" %(aobj.__name__))
+                objmembers = [sstr for sstr in attrs if (isinstance(getattr(cls, sstr), aobj))]
+                self.indent()
+                self.indent()
+                for memb in objmembers:
+                    if inspect.isfunction(getattr(cls, memb)) is True:
+                        try:
+                            self.dprint("%s (%s)" %(memb, inspect.getargspec(getattr(cls, memb))[0]))
+                        except: pass
+                    else:
+                        self.dprint(memb)
+                self.dedent()
+                self.dedent()
+            self.dedent()
+
+        self.dprint ("[@ IMPORTED MODULES  ]")
+        self.indent()
+        for m in mod.items():
+            showfile_print(m)
+        self.dedent()
+
+        self.dprint ("[@ CLASSES  ]")
+        self.indent()
+        for c in cls.items():
+            showfile_print_class(c)
+        self.dedent()
+
+        self.dprint ("[@ BUILTIN  ]")
+        self.indent()
+        for b in builtin.items():
+            showfile_print(b)
+        self.dedent()
+
+        self.dprint ("[@ FUNCTION  ]")
+        self.indent()
+        for f in func.items():
+            showfile_print_function(f)
+        self.dedent()
+
+        self.dprint ("[@ GENERATOR  ]")
+        self.indent()
+        for g in gen.items():
+            showfile_print(g)
+        self.dedent()
+
+        self.dprint ("[@ DESCRIPTOR  ]")
+        self.indent()
+        for d in descrip.items():
+            self.dprint(d[0])
+        self.dedent()
+
+        self.dprint ("[@ INTEGERS  ]")
+        self.indent()
+        for i in ints.items():
+            self.dprint(i[0])
+        self.dedent()
+
+        self.dprint ("[@ STRINGS  ]")
+        self.indent()
+        for s in strings.items():
+            self.dprint(s[0])
+        self.dedent()
+
+        self.dprint ("[@ DICTIONARY  ]")
+        self.indent()
+        for delem in dictn:
+            for k, v in delem.items():
+                self.dprint(k)
+        self.dedent()
+
+    def show_imported_modules(self, file):
+        finder = modulefinder.ModuleFinder()
+        a=finder.run_script(file)
+        dir(a)
+
+        print(' '*4,'Loaded modules')
+        print('-'*50)
+        for name, mod in finder.modules.items():
+            print(' '*4, "|--", ' %s ' % name)
+            print(' '*8, '   ', ','.join(mod.globalnames.keys()[:3]))
+
+        print(' '*50)
+        print(' '*4, 'Modules - NOT IMPORTED')
+        print('-'*50)
+        for name in finder.badmodules.iterkeys():
+            print(' '*4, "|--", ' %s' % name)
+
     def show(self, module):
         """ show the module object passed as argument
         including its classes and functions """
@@ -259,7 +423,7 @@ class showtree:
             except Exception as e:
                 self.dprint(" + ==> Error", e.__doc__, ":", modname)
                 pass
-                return
+                #return
             #print(modobj)
 
         if len(modname) == 0 :
