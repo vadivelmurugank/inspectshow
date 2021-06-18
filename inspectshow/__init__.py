@@ -213,22 +213,42 @@ class showtree:
     def show_subpackages(self, module):
         if module.__name__ in sys.builtin_module_names:
             return
-        RootModule = [module.__name__]
-        # Package dir name will be the root module name
-        rootdir = os.path.basename(os.path.dirname(module.__file__))
-        modname = module.__name__.split('.')[0]
+        try:
+            RootModule = [module.__name__]
+            # Package dir name will be the root module name
+            modname = module.__name__.split('.')[0]
+            rootdir = os.path.basename(os.path.dirname(module.__file__))
+            # print("rootdir: ", rootdir , " modname : " , modname)
 
-        if (rootdir == modname) :
             for root, dir, files in os.walk( os.path.dirname(module.__file__), topdown=True):
                 BaseModule = root
                 for name in files:
                     if (name == ''.join(["__init__",".py"])):
-                        if (os.path.basename(root) != module.__name__):
+                        modlist=BaseModule.split(os.sep)
+                        #curr='.'.join(modlist[modlist.index(module.__name__.split('.')[0]):])
+                        curr='.'.join(modlist[modlist.index(rootdir):])
+                        #print("curr : ", curr , "root : ", root, " module.name: ", module.__name__, " modlist: ", modlist )
+                        if curr not in RootModule:
+                            RootModule.append(curr)
+                            #print(RootModule)
+                    else:
+                        pyfile,extn = os.path.splitext(name)
+                        if (extn[1:] == 'py'):
                             modlist=BaseModule.split(os.sep)
-                            curr='.'.join(modlist[modlist.index(module.__name__.split('.')[0]):])
-                            if curr not in RootModule:
-                                RootModule.append(curr)
-        #print(RootModule)
+                            modfile = '.'.join(modlist[modlist.index(rootdir):])
+                            modfile = modfile + "." + pyfile
+                            #print("pyfile: ",pyfile,"mod: ",modfile)
+                            try:
+                                importlib.import_module(modfile)
+                                if modfile not in RootModule:
+                                    RootModule.append(modfile)
+                                    #printf("pyfile:" , RootModule)
+                            except Exception as e:
+                                pass
+
+        except Exception as e:
+            pass
+
         for modname in RootModule:
             self.indent()
             try:
@@ -408,7 +428,6 @@ class showtree:
         modname=''
         for module in module_root:
             module = (modname + '.' + module).strip('.')
-            print(module)
             try:
                 modobj = importlib.import_module(module)
                 modname = modobj.__name__
@@ -434,9 +453,10 @@ class showtree:
             self.dprint("Valid Module is:", modname)
 
         self.dprint ("[@SUBPACKAGES]")
-        for ModObj in self.Modules:
-            if inspect.ismodule(ModObj):
-                self.show_subpackages(ModObj)
+        print(self.Modules)
+        for modObj in self.Modules:
+            if inspect.ismodule(modObj):
+                self.show_subpackages(modObj)
 
         self.dprint ("[@SUBMODULES ]")
         for ModObj in self.Modules:
@@ -621,6 +641,3 @@ class showtree:
             self.dedent()
         self.dprint ("trace %s " % inspect.trace())
         self.dedent()
-
-
-
